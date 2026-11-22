@@ -1,24 +1,21 @@
-name: build
+name: Build
 
 on:
   push:
-    branches: [main]
+    branches: [ "main" ]
   pull_request:
-    branches: [main]
+    branches: [ "main" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.12
+      - uses: actions/checkout@v4
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
-      - name: Check that app/order_total.py compiles
+      - name: Check the code compiles
         run: python -m py_compile app/order_total.py
       - name: Run the tests
         shell: bash
@@ -29,17 +26,17 @@ jobs:
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           cat test-report.txt >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Copy .py files into dist
+      - name: Check the order prices
+        run: python scripts/price_check.py orders
+      - name: Check the gift box prices
+        run: python scripts/price_check.py gift-boxes
+      - name: Build the package
         run: |
           mkdir -p dist
           cp app/*.py dist/
-
-      - name: Write commit ID to BUILD_INFO.txt
-        run: echo "${{ github.sha }}" > dist/BUILD_INFO.txt
-
-      - name: Upload dist as artifact
+          echo "Built from commit $GITHUB_SHA" > dist/BUILD_INFO.txt
+      - name: Upload the build artifact
         uses: actions/upload-artifact@v4
         with:
           name: bakery-app
-          path: dist
+          path: dist/
